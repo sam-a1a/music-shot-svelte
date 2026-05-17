@@ -1,5 +1,4 @@
 import { nextTick, ref, type Ref } from 'vue'
-import { m } from '../paraglide/messages'
 import type { AlbumData } from '../service'
 import type { ExportRatio } from './useAppSettings'
 

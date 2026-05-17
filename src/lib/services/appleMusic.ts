@@ -1,7 +1,6 @@
 /**
  * 统一的音乐数据接口
  */
-import { m } from './paraglide/messages'
 import type { AppleMusicWebSchema, SpotifyEmbedResponse } from './types'
 import type { AppleMusicSerializedServerData } from './types/appleMusic'
 

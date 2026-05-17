@@ -1,7 +1,6 @@
 import { ref } from 'vue'
 import type { AlbumData } from '../service'
 import { MusicLinkParser } from '../service'
-import { m } from '../paraglide/messages'
 
 export type ViewState = 'input' | 'result'
 type Platform = 'Spotify' | 'AppleMusic'

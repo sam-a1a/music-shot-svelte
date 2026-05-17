@@ -1,6 +1,5 @@
 import { onMounted, onUnmounted, ref, watch, type Ref } from 'vue'
 import { getLocale, setLocale } from '../paraglide/runtime'
-import { m } from '../paraglide/messages'
 
 export type TextAlignMode = 'left' | 'center' | 'right'
 export type ExportRatio = '3:4' | '9:16'
