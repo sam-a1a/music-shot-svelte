@@ -56,12 +56,6 @@
             : 'text-sm font-medium text-on-surface-variant/40 tabular-nums'
     )
 
-    let trackHeartMutedClass = $derived(
-        appSettings.frameTheme === 'light'
-            ? 'material-symbols-outlined text-black/30 text-xl transition-colors hover:text-black'
-            : 'material-symbols-outlined text-on-surface-variant/20 text-xl transition-colors hover:text-white'
-    )
-
     let trackTitleClass = $derived(
         appSettings.frameTheme === 'light'
             ? 'text-sm font-semibold text-black overflow-hidden text-ellipsis whitespace-nowrap'
@@ -184,7 +178,7 @@
             />
         {:else if albumParser.albumData}
             <PhoneResultScreen
-                    resultScreenRef={imageExport.resultScreenRef}
+                    onRootRef={(el) => (imageExport.resultScreenRef = el)}
                     albumData={albumParser.albumData}
                     {coverUrl}
                     exportRenderMode={imageExport.exportRenderMode}
@@ -196,7 +190,6 @@
                     {resultMetaClass}
                     {trackArtistClass}
                     {trackTitleClass}
-                    {trackHeartMutedClass}
                     {trackDurationMutedClass}
                     {formatYear}
                     {formatDuration}
