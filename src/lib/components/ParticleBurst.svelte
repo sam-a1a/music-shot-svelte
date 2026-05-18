@@ -2,7 +2,7 @@
     import { onDestroy } from 'svelte'
     import { SvelteSet } from 'svelte/reactivity'
 
-    let containerRef: HTMLElement
+    let { children }: { children: () => any } = $props()
 
     interface Particle {
         id: number
@@ -97,9 +97,8 @@
         role="presentation"
         onmouseenter={spawnParticles}
         onmouseleave={handleMouseLeave}
-        bind:this={containerRef}
 >
-    <slot></slot>
+    {@render children()}
 
     {#each particles as p (p.id)}
         <div

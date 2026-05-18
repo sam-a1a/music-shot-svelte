@@ -47,7 +47,7 @@
     ></div>
 
     <div
-            class="relative w-full rounded-[24px] border border-white/15 bg-[linear-gradient(180deg,rgb(255_255_255_/_10%),rgb(255_255_255_/_4%))] p-6 shadow-[0_16px_50px_rgb(0_0_0_/_45%)] backdrop-blur-[24px] max-md:rounded-[20px] max-md:p-4"
+            class="relative w-full rounded-3xl border border-white/15 bg-[linear-gradient(180deg,rgb(255_255_255/10%),rgb(255_255_255/4%))] p-6 shadow-[0_16px_50px_rgb(0_0_0/45%)] backdrop-blur-xl max-md:rounded-[20px] max-md:p-4"
     >
         <div class="mb-2 flex items-center justify-between gap-1">
             <GithubRepoButton
