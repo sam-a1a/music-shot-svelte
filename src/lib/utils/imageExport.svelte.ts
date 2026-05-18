@@ -1,6 +1,7 @@
-import { nextTick, ref, type Ref } from 'vue'
-import type { AlbumData } from '../service'
-import type { ExportRatio } from './useAppSettings'
+import { tick } from 'svelte'
+import { albumParser } from './albumParser.svelte'
+import { appSettings } from '$lib/stores/appSettings.svelte'
+import type { ExportRatio } from '$lib/stores/appSettings.svelte'
 
 const EXPORT_FRAME_HEIGHT_RATIO = 0.9
 const EXPORT_SIZE: Record<ExportRatio, { width: number; height: number }> = {
@@ -15,7 +16,7 @@ async function loadImage(src: string): Promise<HTMLImageElement> {
     const img = new Image()
     img.crossOrigin = 'anonymous'
     img.onload = () => resolve(img)
-    img.onerror = () => reject(new Error(m.error_cover_load_failed()))
+    img.onerror = () => reject(new Error('Failed to load cover image'))
     img.src = src
   })
 }
@@ -113,60 +114,51 @@ async function getSnapdom() {
   return snapdomLib.snapdom
 }
 
-export function useImageExport(options: {
-  albumData: Ref<AlbumData | null>
-  exportRatio: Ref<ExportRatio>
-  blurLevel: Ref<number>
-  showCredit: Ref<boolean>
-  creditName: Ref<string>
-  avatarUrl: Ref<string>
-  coverUrl: Ref<string>
-}) {
-  const { albumData, exportRatio, blurLevel, showCredit, creditName, avatarUrl, coverUrl } = options
-
-  const phoneFrameRef = ref<HTMLElement | null>(null)
-  const resultScreenRef = ref<HTMLElement | null>(null)
-  const exporting = ref(false)
-  const exportError = ref('')
-  const exportRenderMode = ref(false)
+function createImageExport(getCoverUrl: () => string) {
+  let phoneFrameRef = $state<HTMLElement | null>(null)
+  let resultScreenRef = $state<HTMLElement | null>(null)
+  let exporting = $state(false)
+  let exportError = $state('')
+  let exportRenderMode = $state(false)
 
   function getExportFileName(): string {
     const safeTitle =
-      (albumData.value?.title || 'album').replace(/[\\/:*?"<>|]+/g, '_').trim() || 'album'
-    return `${safeTitle}_${exportRatio.value.replace(':', 'x')}.png`
+      (albumParser.albumData?.title || 'album').replace(/[\\/:*?"<>|]+/g, '_').trim() || 'album'
+    return `${safeTitle}_${appSettings.exportRatio.replace(':', 'x')}.png`
   }
 
   async function generateAndDownloadImage() {
-    if (!albumData.value || !phoneFrameRef.value || !resultScreenRef.value || exporting.value)
-      return
-    exporting.value = true
-    exportError.value = ''
-    exportRenderMode.value = true
+    if (!albumParser.albumData || !phoneFrameRef || !resultScreenRef || exporting) return
+    exporting = true
+    exportError = ''
+    exportRenderMode = true
     const perfStart = performance.now()
     const stepDurations: Record<string, number> = {}
     const markStep = (name: string, start: number) => {
       stepDurations[name] = Number((performance.now() - start).toFixed(1))
     }
     const imageCache = new Map<string, HTMLImageElement>()
+    const coverUrl = getCoverUrl()
 
     try {
-      await nextTick()
+      await tick()
       if (document.fonts?.ready) {
         await document.fonts.ready
       }
-      const { width, height } = EXPORT_SIZE[exportRatio.value]
-      const frameRect = phoneFrameRef.value.getBoundingClientRect()
-      const resultRect = resultScreenRef.value.getBoundingClientRect()
+      const { width, height } = EXPORT_SIZE[appSettings.exportRatio]
+      const frameRect = phoneFrameRef.getBoundingClientRect()
+      const resultRect = resultScreenRef.getBoundingClientRect()
       const canvas = document.createElement('canvas')
       canvas.width = width
       canvas.height = height
       const ctx = canvas.getContext('2d')
-      if (!ctx) throw new Error(m.error_canvas_context_failed())
+      if (!ctx) throw new Error('Failed to get canvas context')
+
       const loadCoverStart = performance.now()
-      let cover = imageCache.get(coverUrl.value)
+      let cover = imageCache.get(coverUrl)
       if (!cover) {
-        cover = await loadImage(coverUrl.value)
-        imageCache.set(coverUrl.value, cover)
+        cover = await loadImage(coverUrl)
+        imageCache.set(coverUrl, cover)
       }
       markStep('loadCover', loadCoverStart)
 
@@ -178,7 +170,7 @@ export function useImageExport(options: {
       const dy = (height - drawH) / 2
 
       ctx.save()
-      ctx.filter = `blur(${blurLevel.value}px)`
+      ctx.filter = `blur(${appSettings.blurLevel}px)`
       ctx.drawImage(cover, dx, dy, drawW, drawH)
       ctx.restore()
 
@@ -189,15 +181,15 @@ export function useImageExport(options: {
       const desiredInnerHeight = Math.round(height * EXPORT_FRAME_HEIGHT_RATIO)
       const captureScale = desiredInnerHeight / frameRect.height
 
-      const previousScrollTop = resultScreenRef.value.scrollTop
-      resultScreenRef.value.scrollTop = 0
-      await nextTick()
+      const previousScrollTop = resultScreenRef.scrollTop
+      resultScreenRef.scrollTop = 0
+      await tick()
 
       const snapdom = await getSnapdom()
       const snapdomStart = performance.now()
       let frameShot: HTMLCanvasElement
       try {
-        frameShot = await snapdom.toCanvas(phoneFrameRef.value, {
+        frameShot = await snapdom.toCanvas(phoneFrameRef, {
           backgroundColor: 'transparent',
           scale: captureScale,
           dpr: 1,
@@ -207,7 +199,7 @@ export function useImageExport(options: {
           iconFonts: [/Material Symbols/i],
         })
       } finally {
-        resultScreenRef.value.scrollTop = previousScrollTop
+        resultScreenRef.scrollTop = previousScrollTop
       }
       markStep('snapdomCapture', snapdomStart)
 
@@ -220,8 +212,8 @@ export function useImageExport(options: {
       markStep('drawFrame', drawFrameStart)
 
       const drawCreditStart = performance.now()
-      if (showCredit.value) {
-        await drawExportCredit(ctx, width, height, creditName.value, avatarUrl.value, imageCache)
+      if (appSettings.showCredit) {
+        await drawExportCredit(ctx, width, height, appSettings.creditName, appSettings.avatarUrl, imageCache)
       }
       markStep('drawCredit', drawCreditStart)
       frameShot.width = 0
@@ -232,7 +224,7 @@ export function useImageExport(options: {
       const blob: Blob | null = await new Promise((resolve) =>
         canvas.toBlob(resolve, 'image/png', 1),
       )
-      if (!blob) throw new Error(m.error_image_generate_failed())
+      if (!blob) throw new Error('Failed to generate image')
       markStep('encodePng', encodeStart)
 
       await nextFrame()
@@ -243,36 +235,41 @@ export function useImageExport(options: {
       link.download = getExportFileName()
       link.click()
       URL.revokeObjectURL(url)
+
       if (import.meta.env.DEV) {
         const total = Number((performance.now() - perfStart).toFixed(1))
         console.groupCollapsed('[export-image] perf')
         console.log('params:', {
-          ratio: exportRatio.value,
+          ratio: appSettings.exportRatio,
           width,
           height,
           frameRect: { width: frameRect.width, height: frameRect.height },
           resultRect: { width: resultRect.width, height: resultRect.height },
           captureScale: Number(captureScale.toFixed(3)),
-          blurLevel: blurLevel.value,
+          blurLevel: appSettings.blurLevel,
         })
         console.table({ ...stepDurations, total })
         console.groupEnd()
       }
     } catch (err) {
-      exportError.value = (err as Error).message || m.error_export_failed()
+      exportError = (err as Error).message || 'Export failed'
       console.error('[export-image] failed:', err)
     } finally {
-      exportRenderMode.value = false
-      exporting.value = false
+      exportRenderMode = false
+      exporting = false
     }
   }
 
   return {
-    phoneFrameRef,
-    resultScreenRef,
-    exporting,
-    exportError,
-    exportRenderMode,
+    get phoneFrameRef() { return phoneFrameRef },
+    set phoneFrameRef(v) { phoneFrameRef = v },
+    get resultScreenRef() { return resultScreenRef },
+    set resultScreenRef(v) { resultScreenRef = v },
+    get exporting() { return exporting },
+    get exportError() { return exportError },
+    get exportRenderMode() { return exportRenderMode },
     generateAndDownloadImage,
   }
 }
+
+export const imageExport = createImageExport(() => '')

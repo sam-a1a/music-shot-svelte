@@ -1,20 +1,19 @@
-import { ref } from 'vue'
-import type { AlbumData } from '../service'
-import { MusicLinkParser } from '../service'
+import type { AlbumData } from '$lib/services/appleMusic'
+import { MusicLinkParser } from '$lib/services/appleMusic'
 
 export type ViewState = 'input' | 'result'
 type Platform = 'Spotify' | 'AppleMusic'
 
 function detectAndValidateAlbumUrl(rawUrl: string): { platform: Platform; cleanedUrl: string } {
   if (!rawUrl.trim()) {
-    throw new Error(m.error_empty_url())
+    throw new Error('Please enter a URL')
   }
 
   let url: URL
   try {
     url = new URL(rawUrl.trim())
   } catch {
-    throw new Error(m.error_invalid_url_format())
+    throw new Error('Invalid URL format')
   }
 
   const hostname = url.hostname.toLowerCase()
@@ -22,37 +21,37 @@ function detectAndValidateAlbumUrl(rawUrl: string): { platform: Platform; cleane
 
   const spotifyMatch = pathname.match(/\/album\/([a-zA-Z0-9]+)(?:\/|$)/)
   if (hostname.includes('spotify.com')) {
-    if (!spotifyMatch) throw new Error(m.error_invalid_spotify_url())
+    if (!spotifyMatch) throw new Error('Invalid Spotify album URL')
     return { platform: 'Spotify', cleanedUrl: url.toString() }
   }
 
   const appleMatch = pathname.match(/\/album\/.+\/(\d+)(?:\?|$|\/)/)
   if (hostname.includes('apple.com')) {
-    if (!appleMatch) throw new Error(m.error_invalid_apple_url())
+    if (!appleMatch) throw new Error('Invalid Apple Music album URL')
     return { platform: 'AppleMusic', cleanedUrl: url.toString() }
   }
 
-  throw new Error(m.error_unsupported_platform())
+  throw new Error('Unsupported platform')
 }
 
-export function useAlbumParser() {
+function createAlbumParser() {
   const parser = new MusicLinkParser()
 
-  const viewState = ref<ViewState>('input')
-  const inputUrl = ref('')
-  const loading = ref(false)
-  const errorMsg = ref('')
-  const albumData = ref<AlbumData | null>(null)
+  let viewState = $state<ViewState>('input')
+  let inputUrl = $state('')
+  let loading = $state(false)
+  let errorMsg = $state('')
+  let albumData = $state<AlbumData | null>(null)
 
   async function handleSubmit(onSuccess?: () => void) {
-    errorMsg.value = ''
+    errorMsg = ''
     try {
-      const { cleanedUrl } = detectAndValidateAlbumUrl(inputUrl.value)
-      loading.value = true
+      const { cleanedUrl } = detectAndValidateAlbumUrl(inputUrl)
+      loading = true
       const result = await parser.parse(cleanedUrl)
       console.log(result)
-      albumData.value = result
-      viewState.value = 'result'
+      albumData = result
+      viewState = 'result'
       onSuccess?.()
     } catch (error) {
       console.error('[handleSubmit] parse failed:', error)
@@ -62,24 +61,30 @@ export function useAlbumParser() {
           console.error('[handleSubmit] cause:', error.cause)
         }
       }
-      errorMsg.value = (error as Error).message || m.error_parse_failed()
+      errorMsg = (error as Error).message || 'Failed to parse album'
     } finally {
-      loading.value = false
+      loading = false
     }
   }
 
   function handleBack() {
-    viewState.value = 'input'
-    inputUrl.value = ''
+    viewState = 'input'
+    inputUrl = ''
   }
 
   return {
-    viewState,
-    inputUrl,
-    loading,
-    errorMsg,
-    albumData,
+    get viewState() { return viewState },
+    set viewState(v) { viewState = v },
+    get inputUrl() { return inputUrl },
+    set inputUrl(v) { inputUrl = v },
+    get loading() { return loading },
+    get errorMsg() { return errorMsg },
+    set errorMsg(v) { errorMsg = v },
+    get albumData() { return albumData },
+    set albumData(v) { albumData = v },
     handleSubmit,
     handleBack,
   }
 }
+
+export const albumParser = createAlbumParser()
