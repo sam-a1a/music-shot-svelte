@@ -12,7 +12,7 @@ const STORAGE_FRAME_THEME_KEY = 'music-shot:frame-theme'
 const STORAGE_TITLE_ALIGN_KEY = 'music-shot:title-align'
 const STORAGE_DEBUG_PREFIX = '[credit-storage]'
 
-export const GITHUB_REPO_URL = 'https://github.com/ianhoho7/music-shot'
+export const GITHUB_REPO_URL = 'https://github.com/sam-a1a/music-shot-svelte'
 
 function detectBrowserLocale(): 'en' | 'zh' {
   if (typeof window === 'undefined') return 'en'
@@ -122,18 +122,16 @@ function createAppSettings() {
   let locale = $state<'en' | 'zh'>('en')
 
   function init() {
-    let nextLocale: 'en' | 'zh' = 'en'
     try {
       const saved = localStorage.getItem(STORAGE_LOCALE_KEY)
       if (saved === 'zh' || saved === 'en') {
-        nextLocale = saved
+        locale = saved
       } else {
-        nextLocale = detectBrowserLocale()
+        locale = detectBrowserLocale()
       }
     } catch {
-      nextLocale = detectBrowserLocale()
+      locale = detectBrowserLocale()
     }
-    locale = nextLocale
 
     try {
       const savedName = localStorage.getItem(STORAGE_CREDIT_NAME_KEY)
@@ -217,12 +215,6 @@ function createAppSettings() {
     })
   }
 
-  function handleViewStateChange(state: 'input' | 'result') {
-    if (state !== 'result') {
-      isMobilePanelOpen = false
-    }
-  }
-
   return {
     get blurLevel() { return blurLevel },
     set blurLevel(v) { blurLevel = v; setStorageItemWithLog(STORAGE_BLUR_LEVEL_KEY, String(v)) },
@@ -255,7 +247,6 @@ function createAppSettings() {
     updateAccentColor,
     clearAvatar,
     handleAvatarUpload,
-    handleViewStateChange,
   }
 }
 
