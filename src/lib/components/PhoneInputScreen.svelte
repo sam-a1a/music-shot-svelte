@@ -1,5 +1,7 @@
 <script lang="ts">
     import { slide } from 'svelte/transition'
+    import { t } from '$lib/i18n/index.svelte'
+    import type { Locale } from '$lib/i18n/index.svelte'
     import GithubRepoButton from './GithubRepoButton.svelte'
 
     let {
@@ -12,11 +14,11 @@
         handleSubmit,
         updateInputUrl,
     }: {
-        locale: 'en' | 'zh'
+        locale: Locale
         inputUrl: string
         loading: boolean
         errorMsg: string
-        changeLocale: (next: 'en' | 'zh') => void
+        changeLocale: (next: Locale) => void
         openGithubRepo: () => void
         handleSubmit: () => void
         updateInputUrl: (value: string) => void
@@ -46,36 +48,27 @@
                     className="h-6 inline-flex items-center gap-1.5 rounded-lg border border-white/20 bg-white/10 px-2 text-xs font-semibold text-white transition-colors hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 cursor-pointer"
                     iconClassName="h-3.5 w-3.5"
             />
-            <div class="grid grid-cols-2 rounded-lg bg-white/10">
-                <button
-                        type="button"
-                        class="rounded-lg px-2 py-1 text-xs font-semibold text-white transition-colors cursor-pointer {locale === 'zh' ? 'bg-white/25' : 'hover:bg-white/15'}"
-                        data-testid="locale-zh-input"
-                        data-ai-action="set-locale-zh"
-                        onclick={() => changeLocale('zh')}
-                >
-                    中文
-                </button>
-                <button
-                        type="button"
-                        class="rounded-lg px-2 py-1 text-xs font-semibold text-white transition-colors cursor-pointer {locale === 'en' ? 'bg-white/25' : 'hover:bg-white/15'}"
-                        data-testid="locale-en-input"
-                        data-ai-action="set-locale-en"
-                        onclick={() => changeLocale('en')}
-                >
-                    EN
-                </button>
+            <div class="grid grid-cols-4 rounded-lg bg-white/10">
+                {#each (['en', 'zh', 'ar', 'ru'] as Locale[]) as loc (loc)}
+                    <button
+                            type="button"
+                            class="rounded-lg px-2 py-1 text-xs font-semibold text-white transition-colors cursor-pointer {locale === loc ? 'bg-white/25' : 'hover:bg-white/15'}"
+                            onclick={() => changeLocale(loc)}
+                    >
+                        {t(`locale_${loc}`, locale)}
+                    </button>
+                {/each}
             </div>
         </div>
 
-        <div class="mb-6 pb-5 max-md:mb-5 max-md:pb-4 pt-12">
+        <div class="mb-6 pb-5 max-md:mb-5 max-md:pb-4">
             <h1
                     class="m-0 mt-2 font-headline text-[34px] leading-[1.02] font-extrabold text-white max-md:text-[28px]"
             >
-                Music Shot
+                {t('app_title', locale)}
             </h1>
             <p class="m-0 mt-2 text-[13px] leading-5 text-white/80 max-md:text-xs">
-                Enter an Apple Music or Spotify album link to generate a beautiful share card.
+                {t('input_subtitle', locale)}
             </p>
         </div>
 
@@ -88,7 +81,7 @@
                     type="url"
                     name="album-url"
                     autocomplete="off"
-                    placeholder="Spotify or Apple album URL.."
+                    placeholder={t('input_placeholder', locale)}
                     disabled={loading}
                     aria-invalid={!!errorMsg || undefined}
                     aria-describedby={errorMsg ? 'album-url-error' : undefined}
@@ -118,11 +111,11 @@
                         data-ai-action="parse-album-url"
                         onclick={handleSubmit}
                 >
-                    {loading ? 'Parsing...' : 'Generate'}
+                    {loading ? t('input_parsing', locale) : t('input_submit', locale)}
                 </button>
                 {#if !inputUrl.trim() && !loading}
                     <div class="absolute -top-9 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-lg bg-black/90 px-3 py-1.5 text-xs font-medium text-white opacity-0 transition-opacity duration-200 group-hover:opacity-100 pointer-events-none shadow-lg">
-                        Please paste a link first
+                        {t('error_empty_url', locale)}
                     </div>
                 {/if}
             </div>
@@ -130,7 +123,7 @@
 
         <div class="mt-5 flex flex-wrap items-center gap-2 pt-5 max-md:mt-4 max-md:pt-4">
       <span class="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/50">
-        SUPPORTED PLATFORMS
+        {t('label_supported_platforms', locale)}
       </span>
             <span
                     class="inline-flex items-center rounded-full bg-[#1ed760] px-2.5 py-1 text-[11px] font-semibold text-white"
