@@ -1,8 +1,9 @@
 <script lang="ts">
     import { onDestroy } from 'svelte'
     import { SvelteSet } from 'svelte/reactivity'
+    import type { Snippet } from 'svelte'
 
-    let { children }: { children: () => any } = $props()
+    let { children }: { children: Snippet } = $props()
 
     interface Particle {
         id: number
