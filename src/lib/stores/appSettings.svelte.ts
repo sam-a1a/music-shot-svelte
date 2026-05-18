@@ -1,6 +1,3 @@
-import { onMounted, onUnmounted, ref, watch, type Ref } from 'vue'
-import { getLocale, setLocale } from '../paraglide/runtime'
-
 export type TextAlignMode = 'left' | 'center' | 'right'
 export type ExportRatio = '3:4' | '9:16'
 export type FrameTheme = 'dark' | 'light'
@@ -15,9 +12,10 @@ const STORAGE_FRAME_THEME_KEY = 'music-shot:frame-theme'
 const STORAGE_TITLE_ALIGN_KEY = 'music-shot:title-align'
 const STORAGE_DEBUG_PREFIX = '[credit-storage]'
 
-export const GITHUB_REPO_URL = 'https://github.com/ianho7/music-shot'
+export const GITHUB_REPO_URL = 'https://github.com/ianhoho7/music-shot'
 
 function detectBrowserLocale(): 'en' | 'zh' {
+  if (typeof window === 'undefined') return 'en'
   const langs = navigator.languages?.length ? navigator.languages : [navigator.language]
   const normalized = (langs[0] || '').toLowerCase()
   return normalized.startsWith('zh') ? 'zh' : 'en'
@@ -46,7 +44,7 @@ async function readFileAsDataURL(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
     reader.onload = () => resolve(String(reader.result || ''))
-    reader.onerror = () => reject(new Error(m.error_avatar_read_failed()))
+    reader.onerror = () => reject(new Error('Failed to read avatar file'))
     reader.readAsDataURL(file)
   })
 }
@@ -55,7 +53,7 @@ async function loadImageElement(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const img = new Image()
     img.onload = () => resolve(img)
-    img.onerror = () => reject(new Error(m.error_avatar_load_failed()))
+    img.onerror = () => reject(new Error('Failed to load avatar image'))
     img.src = src
   })
 }
@@ -74,7 +72,7 @@ async function compressAvatarToDataURL(file: File): Promise<string> {
   canvas.width = outW
   canvas.height = outH
   const ctx = canvas.getContext('2d')
-  if (!ctx) throw new Error(m.error_avatar_compress_failed())
+  if (!ctx) throw new Error('Failed to compress avatar')
   ctx.drawImage(img, 0, 0, outW, outH)
 
   const webp = canvas.toDataURL('image/webp', 0.82)
@@ -110,20 +108,20 @@ function setStorageItemWithLog(key: string, value: string) {
   }
 }
 
-export function useAppSettings(viewState: Ref<'input' | 'result'>) {
-  const blurLevel = ref(20)
-  const titleAlign = ref<TextAlignMode>('center')
-  const exportRatio = ref<ExportRatio>('3:4')
-  const frameTheme = ref<FrameTheme>('dark')
-  const customAccentColor = ref('')
-  const creditName = ref('@your_name')
-  const avatarUrl = ref('')
-  const avatarFileInputRef = ref<HTMLInputElement | null>(null)
-  const showCredit = ref(true)
-  const isMobilePanelOpen = ref(false)
-  const locale = ref<'en' | 'zh'>('en')
+function createAppSettings() {
+  let blurLevel = $state(20)
+  let titleAlign = $state<TextAlignMode>('center')
+  let exportRatio = $state<ExportRatio>('3:4')
+  let frameTheme = $state<FrameTheme>('dark')
+  let customAccentColor = $state('')
+  let creditName = $state('@your_name')
+  let avatarUrl = $state('')
+  let avatarFileInputRef: HTMLInputElement | null = $state(null)
+  let showCredit = $state(true)
+  let isMobilePanelOpen = $state(false)
+  let locale = $state<'en' | 'zh'>('en')
 
-  function initLocale() {
+  function init() {
     let nextLocale: 'en' | 'zh' = 'en'
     try {
       const saved = localStorage.getItem(STORAGE_LOCALE_KEY)
@@ -135,15 +133,34 @@ export function useAppSettings(viewState: Ref<'input' | 'result'>) {
     } catch {
       nextLocale = detectBrowserLocale()
     }
-    setLocale(nextLocale, { reload: false })
-    locale.value = getLocale()
+    locale = nextLocale
+
+    try {
+      const savedName = localStorage.getItem(STORAGE_CREDIT_NAME_KEY)
+      const savedAvatar = localStorage.getItem(STORAGE_AVATAR_URL_KEY)
+      const savedShowCredit = localStorage.getItem(STORAGE_SHOW_CREDIT_KEY)
+      const savedBlurLevel = localStorage.getItem(STORAGE_BLUR_LEVEL_KEY)
+      const savedExportRatio = localStorage.getItem(STORAGE_EXPORT_RATIO_KEY)
+      const savedFrameTheme = localStorage.getItem(STORAGE_FRAME_THEME_KEY)
+      const savedTitleAlign = localStorage.getItem(STORAGE_TITLE_ALIGN_KEY)
+      if (savedName) creditName = savedName
+      if (savedAvatar) avatarUrl = savedAvatar
+      if (savedShowCredit === 'true' || savedShowCredit === 'false') {
+        showCredit = savedShowCredit === 'true'
+      }
+      blurLevel = parseSavedBlurLevel(savedBlurLevel)
+      exportRatio = parseSavedExportRatio(savedExportRatio)
+      frameTheme = parseSavedFrameTheme(savedFrameTheme)
+      titleAlign = parseSavedTitleAlign(savedTitleAlign)
+    } catch {
+      console.error(`${STORAGE_DEBUG_PREFIX} mounted-read-failed`)
+    }
   }
 
   function changeLocale(next: 'en' | 'zh') {
-    setLocale(next, { reload: false })
-    locale.value = getLocale()
+    locale = next
     try {
-      localStorage.setItem(STORAGE_LOCALE_KEY, locale.value)
+      localStorage.setItem(STORAGE_LOCALE_KEY, locale)
     } catch {
       // ignore
     }
@@ -154,29 +171,29 @@ export function useAppSettings(viewState: Ref<'input' | 'result'>) {
   }
 
   function toggleMobilePanel() {
-    isMobilePanelOpen.value = !isMobilePanelOpen.value
+    isMobilePanelOpen = !isMobilePanelOpen
   }
 
   function closeMobilePanel() {
-    isMobilePanelOpen.value = false
+    isMobilePanelOpen = false
   }
 
   function resetAccentColor() {
-    customAccentColor.value = ''
+    customAccentColor = ''
   }
 
   function updateAccentColor(event: Event) {
     const target = event.target as HTMLInputElement
-    customAccentColor.value = target.value || ''
+    customAccentColor = target.value || ''
   }
 
   function clearAvatar() {
-    if (avatarUrl.value.startsWith('blob:')) {
-      URL.revokeObjectURL(avatarUrl.value)
+    if (avatarUrl.startsWith('blob:')) {
+      URL.revokeObjectURL(avatarUrl)
     }
-    avatarUrl.value = ''
-    if (avatarFileInputRef.value) {
-      avatarFileInputRef.value.value = ''
+    avatarUrl = ''
+    if (avatarFileInputRef) {
+      avatarFileInputRef.value = ''
     }
   }
 
@@ -185,77 +202,60 @@ export function useAppSettings(viewState: Ref<'input' | 'result'>) {
     const file = target.files?.[0]
     if (!file || !file.type.startsWith('image/')) return
 
-    if (avatarUrl.value.startsWith('blob:')) {
-      URL.revokeObjectURL(avatarUrl.value)
+    if (avatarUrl.startsWith('blob:')) {
+      URL.revokeObjectURL(avatarUrl)
     }
     console.log(`${STORAGE_DEBUG_PREFIX} upload-start`, {
       name: file.name,
       type: file.type,
       size: file.size,
     })
-    avatarUrl.value = await compressAvatarToDataURL(file)
+    avatarUrl = await compressAvatarToDataURL(file)
     console.log(`${STORAGE_DEBUG_PREFIX} upload-compressed`, {
-      dataUrlLength: avatarUrl.value.length,
-      approxKB: Math.round((avatarUrl.value.length * 2) / 1024),
+      dataUrlLength: avatarUrl.length,
+      approxKB: Math.round((avatarUrl.length * 2) / 1024),
     })
   }
 
-  onMounted(() => {
-    initLocale()
-    try {
-      const savedName = localStorage.getItem(STORAGE_CREDIT_NAME_KEY)
-      const savedAvatar = localStorage.getItem(STORAGE_AVATAR_URL_KEY)
-      const savedShowCredit = localStorage.getItem(STORAGE_SHOW_CREDIT_KEY)
-      const savedBlurLevel = localStorage.getItem(STORAGE_BLUR_LEVEL_KEY)
-      const savedExportRatio = localStorage.getItem(STORAGE_EXPORT_RATIO_KEY)
-      const savedFrameTheme = localStorage.getItem(STORAGE_FRAME_THEME_KEY)
-      const savedTitleAlign = localStorage.getItem(STORAGE_TITLE_ALIGN_KEY)
-      if (savedName) creditName.value = savedName
-      if (savedAvatar) avatarUrl.value = savedAvatar
-      if (savedShowCredit === 'true' || savedShowCredit === 'false') {
-        showCredit.value = savedShowCredit === 'true'
-      }
-      blurLevel.value = parseSavedBlurLevel(savedBlurLevel)
-      exportRatio.value = parseSavedExportRatio(savedExportRatio)
-      frameTheme.value = parseSavedFrameTheme(savedFrameTheme)
-      titleAlign.value = parseSavedTitleAlign(savedTitleAlign)
-    } catch {
-      console.error(`${STORAGE_DEBUG_PREFIX} mounted-read-failed`)
+  function handleViewStateChange(state: 'input' | 'result') {
+    if (state !== 'result') {
+      isMobilePanelOpen = false
     }
-  })
+  }
 
-  watch(creditName, (value) => setStorageItemWithLog(STORAGE_CREDIT_NAME_KEY, value))
-  watch(avatarUrl, (value) => setStorageItemWithLog(STORAGE_AVATAR_URL_KEY, value))
-  watch(showCredit, (value) => setStorageItemWithLog(STORAGE_SHOW_CREDIT_KEY, String(value)))
-  watch(blurLevel, (value) => setStorageItemWithLog(STORAGE_BLUR_LEVEL_KEY, String(value)))
-  watch(exportRatio, (value) => setStorageItemWithLog(STORAGE_EXPORT_RATIO_KEY, value))
-  watch(frameTheme, (value) => setStorageItemWithLog(STORAGE_FRAME_THEME_KEY, value))
-  watch(titleAlign, (value) => setStorageItemWithLog(STORAGE_TITLE_ALIGN_KEY, value))
-
-  watch(viewState, (value) => {
-    if (value !== 'result') {
-      isMobilePanelOpen.value = false
-    }
-  })
-
-  onUnmounted(() => {
-    if (avatarUrl.value.startsWith('blob:')) {
-      URL.revokeObjectURL(avatarUrl.value)
-    }
-  })
+  // Sync state to localStorage
+  $effect(() => setStorageItemWithLog(STORAGE_CREDIT_NAME_KEY, creditName))
+  $effect(() => setStorageItemWithLog(STORAGE_AVATAR_URL_KEY, avatarUrl))
+  $effect(() => setStorageItemWithLog(STORAGE_SHOW_CREDIT_KEY, String(showCredit)))
+  $effect(() => setStorageItemWithLog(STORAGE_BLUR_LEVEL_KEY, String(blurLevel)))
+  $effect(() => setStorageItemWithLog(STORAGE_EXPORT_RATIO_KEY, exportRatio))
+  $effect(() => setStorageItemWithLog(STORAGE_FRAME_THEME_KEY, frameTheme))
+  $effect(() => setStorageItemWithLog(STORAGE_TITLE_ALIGN_KEY, titleAlign))
 
   return {
-    blurLevel,
-    titleAlign,
-    exportRatio,
-    frameTheme,
-    customAccentColor,
-    creditName,
-    avatarUrl,
-    avatarFileInputRef,
-    showCredit,
-    isMobilePanelOpen,
-    locale,
+    get blurLevel() { return blurLevel },
+    set blurLevel(v) { blurLevel = v },
+    get titleAlign() { return titleAlign },
+    set titleAlign(v) { titleAlign = v },
+    get exportRatio() { return exportRatio },
+    set exportRatio(v) { exportRatio = v },
+    get frameTheme() { return frameTheme },
+    set frameTheme(v) { frameTheme = v },
+    get customAccentColor() { return customAccentColor },
+    set customAccentColor(v) { customAccentColor = v },
+    get creditName() { return creditName },
+    set creditName(v) { creditName = v },
+    get avatarUrl() { return avatarUrl },
+    set avatarUrl(v) { avatarUrl = v },
+    get avatarFileInputRef() { return avatarFileInputRef },
+    set avatarFileInputRef(v) { avatarFileInputRef = v },
+    get showCredit() { return showCredit },
+    set showCredit(v) { showCredit = v },
+    get isMobilePanelOpen() { return isMobilePanelOpen },
+    set isMobilePanelOpen(v) { isMobilePanelOpen = v },
+    get locale() { return locale },
+    set locale(v) { locale = v },
+    init,
     changeLocale,
     openGithubRepo,
     toggleMobilePanel,
@@ -264,5 +264,8 @@ export function useAppSettings(viewState: Ref<'input' | 'result'>) {
     updateAccentColor,
     clearAvatar,
     handleAvatarUpload,
+    handleViewStateChange,
   }
 }
+
+export const appSettings = createAppSettings()
