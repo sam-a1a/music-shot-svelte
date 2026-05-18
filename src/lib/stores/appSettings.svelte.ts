@@ -1,3 +1,6 @@
+import type { Locale } from '$lib/i18n/index.svelte'
+import { isRTL } from '$lib/i18n/index.svelte'
+
 export type TextAlignMode = 'left' | 'center' | 'right'
 export type ExportRatio = '3:4' | '9:16'
 export type FrameTheme = 'dark' | 'light'
@@ -14,11 +17,14 @@ const STORAGE_DEBUG_PREFIX = '[credit-storage]'
 
 export const GITHUB_REPO_URL = 'https://github.com/sam-a1a/music-shot-svelte'
 
-function detectBrowserLocale(): 'en' | 'zh' {
+function detectBrowserLocale(): Locale {
   if (typeof window === 'undefined') return 'en'
   const langs = navigator.languages?.length ? navigator.languages : [navigator.language]
   const normalized = (langs[0] || '').toLowerCase()
-  return normalized.startsWith('zh') ? 'zh' : 'en'
+  if (normalized.startsWith('zh')) return 'zh'
+  if (normalized.startsWith('ar')) return 'ar'
+  if (normalized.startsWith('ru')) return 'ru'
+  return 'en'
 }
 
 function parseSavedBlurLevel(raw: string | null): number {
@@ -119,12 +125,12 @@ function createAppSettings() {
   let avatarFileInputRef: HTMLInputElement | null = $state(null)
   let showCredit = $state(true)
   let isMobilePanelOpen = $state(false)
-  let locale = $state<'en' | 'zh'>('en')
+  let locale = $state<Locale>('en')
 
   function init() {
     try {
       const saved = localStorage.getItem(STORAGE_LOCALE_KEY)
-      if (saved === 'zh' || saved === 'en') {
+      if (saved === 'zh' || saved === 'en' || saved === 'ar' || saved === 'ru') {
         locale = saved
       } else {
         locale = detectBrowserLocale()
@@ -155,7 +161,7 @@ function createAppSettings() {
     }
   }
 
-  function changeLocale(next: 'en' | 'zh') {
+  function changeLocale(next: Locale) {
     locale = next
     try {
       localStorage.setItem(STORAGE_LOCALE_KEY, locale)
@@ -238,6 +244,7 @@ function createAppSettings() {
     set isMobilePanelOpen(v) { isMobilePanelOpen = v },
     get locale() { return locale },
     set locale(v) { locale = v },
+    get dir() { return isRTL(locale) ? 'rtl' : 'ltr' },
     init,
     changeLocale,
     openGithubRepo,
