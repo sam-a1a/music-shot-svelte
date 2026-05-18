@@ -1,4 +1,5 @@
 import { tick } from 'svelte'
+import { SvelteMap } from 'svelte/reactivity'
 import { appSettings } from '$lib/stores/appSettings.svelte'
 import type { ExportRatio } from '$lib/stores/appSettings.svelte'
 import { albumParser } from './albumParser.svelte'
@@ -137,7 +138,7 @@ function createImageExport(getCoverUrl: () => string) {
     const markStep = (name: string, start: number) => {
       stepDurations[name] = Number((performance.now() - start).toFixed(1))
     }
-    const imageCache = new Map<string, HTMLImageElement>()
+    const imageCache = new SvelteMap<string, HTMLImageElement>()
     const coverUrl = getCoverUrl()
 
     try {
@@ -152,7 +153,11 @@ function createImageExport(getCoverUrl: () => string) {
       canvas.width = width
       canvas.height = height
       const ctx = canvas.getContext('2d')
-      if (!ctx) throw new Error('Failed to get canvas context')
+
+      if (!ctx) {
+        exportError = 'Failed to get canvas context'
+        return
+      }
 
       const loadCoverStart = performance.now()
       let cover = imageCache.get(coverUrl)
@@ -224,7 +229,11 @@ function createImageExport(getCoverUrl: () => string) {
       const blob: Blob | null = await new Promise((resolve) =>
         canvas.toBlob(resolve, 'image/png', 1),
       )
-      if (!blob) throw new Error('Failed to generate image')
+
+      if (!blob) {
+        exportError = 'Failed to generate image'
+        return
+      }
       markStep('encodePng', encodeStart)
 
       await nextFrame()
