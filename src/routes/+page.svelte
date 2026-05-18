@@ -88,6 +88,10 @@
     }
 </script>
 
+<svelte:head>
+    <title>Music Cover</title>
+</svelte:head>
+
 <div
         class="relative grid h-dvh w-full place-items-center overflow-hidden {albumParser.viewState === 'input'
     ? 'bg-black'
