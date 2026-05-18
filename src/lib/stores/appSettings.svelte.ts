@@ -223,34 +223,25 @@ function createAppSettings() {
     }
   }
 
-  // Sync state to localStorage
-  $effect(() => setStorageItemWithLog(STORAGE_CREDIT_NAME_KEY, creditName))
-  $effect(() => setStorageItemWithLog(STORAGE_AVATAR_URL_KEY, avatarUrl))
-  $effect(() => setStorageItemWithLog(STORAGE_SHOW_CREDIT_KEY, String(showCredit)))
-  $effect(() => setStorageItemWithLog(STORAGE_BLUR_LEVEL_KEY, String(blurLevel)))
-  $effect(() => setStorageItemWithLog(STORAGE_EXPORT_RATIO_KEY, exportRatio))
-  $effect(() => setStorageItemWithLog(STORAGE_FRAME_THEME_KEY, frameTheme))
-  $effect(() => setStorageItemWithLog(STORAGE_TITLE_ALIGN_KEY, titleAlign))
-
   return {
     get blurLevel() { return blurLevel },
-    set blurLevel(v) { blurLevel = v },
+    set blurLevel(v) { blurLevel = v; setStorageItemWithLog(STORAGE_BLUR_LEVEL_KEY, String(v)) },
     get titleAlign() { return titleAlign },
-    set titleAlign(v) { titleAlign = v },
+    set titleAlign(v) { titleAlign = v; setStorageItemWithLog(STORAGE_TITLE_ALIGN_KEY, v) },
     get exportRatio() { return exportRatio },
-    set exportRatio(v) { exportRatio = v },
+    set exportRatio(v) { exportRatio = v; setStorageItemWithLog(STORAGE_EXPORT_RATIO_KEY, v) },
     get frameTheme() { return frameTheme },
-    set frameTheme(v) { frameTheme = v },
+    set frameTheme(v) { frameTheme = v; setStorageItemWithLog(STORAGE_FRAME_THEME_KEY, v) },
     get customAccentColor() { return customAccentColor },
     set customAccentColor(v) { customAccentColor = v },
     get creditName() { return creditName },
-    set creditName(v) { creditName = v },
+    set creditName(v) { creditName = v; setStorageItemWithLog(STORAGE_CREDIT_NAME_KEY, v) },
     get avatarUrl() { return avatarUrl },
-    set avatarUrl(v) { avatarUrl = v },
+    set avatarUrl(v) { avatarUrl = v; setStorageItemWithLog(STORAGE_AVATAR_URL_KEY, v) },
     get avatarFileInputRef() { return avatarFileInputRef },
     set avatarFileInputRef(v) { avatarFileInputRef = v },
     get showCredit() { return showCredit },
-    set showCredit(v) { showCredit = v },
+    set showCredit(v) { showCredit = v; setStorageItemWithLog(STORAGE_SHOW_CREDIT_KEY, String(v)) },
     get isMobilePanelOpen() { return isMobilePanelOpen },
     set isMobilePanelOpen(v) { isMobilePanelOpen = v },
     get locale() { return locale },

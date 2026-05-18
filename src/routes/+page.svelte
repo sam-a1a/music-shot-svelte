@@ -13,70 +13,106 @@
         appSettings.init()
     })
 
-    $effect(() => {
-        appSettings.handleViewStateChange(albumParser.viewState)
-    })
+    // Computed values
+    let coverUrl = $derived(albumParser.albumData?.cover_url ?? '')
 
-    const resolvedAccentColor = $derived(
-        appSettings.customAccentColor || (appSettings.frameTheme === 'dark' ? '#ffffff' : '#000000')
+    let platformAccentColor = $derived(
+        albumParser.albumData?.platform === 'AppleMusic' ? '#ff4e6b' : '#1ed760'
+    )
+    let resolvedAccentColor = $derived(
+        appSettings.customAccentColor || platformAccentColor
     )
 
-    function formatYear(releaseDate: string): string {
-        if (!releaseDate) return ''
-        return new Date(releaseDate).getFullYear().toString()
+    let titleAlignClass = $derived(
+        appSettings.titleAlign === 'center' ? 'text-center' :
+            appSettings.titleAlign === 'right' ? 'text-right' : 'text-left'
+    )
+
+    let resultScreenThemeClass = $derived(
+        appSettings.frameTheme === 'light'
+            ? 'bg-[#f6f7f9] text-[#101114]'
+            : 'bg-surface-dim text-on-surface'
+    )
+
+    let resultOverlayClass = $derived(
+        appSettings.frameTheme === 'light'
+            ? 'absolute inset-x-0 top-0 bg-gradient-to-b from-white via-white/80 to-white/20'
+            : 'absolute inset-x-0 top-0 bg-gradient-to-b from-surface-dim/20 via-surface-dim/80 to-surface-dim'
+    )
+
+    let resultMetaClass = $derived(
+        appSettings.frameTheme === 'light'
+            ? 'text-sm font-medium text-black/55 font-headline max-md:text-xs'
+            : 'text-sm font-medium text-on-surface-variant/60 font-headline max-md:text-xs'
+    )
+
+    let trackArtistClass = $derived(
+        appSettings.frameTheme === 'light' ? 'text-xs text-black/55' : 'text-xs text-on-surface-variant'
+    )
+
+    let trackDurationMutedClass = $derived(
+        appSettings.frameTheme === 'light'
+            ? 'text-sm font-medium text-black/45 tabular-nums'
+            : 'text-sm font-medium text-on-surface-variant/40 tabular-nums'
+    )
+
+    let trackHeartMutedClass = $derived(
+        appSettings.frameTheme === 'light'
+            ? 'material-symbols-outlined text-black/30 text-xl transition-colors hover:text-black'
+            : 'material-symbols-outlined text-on-surface-variant/20 text-xl transition-colors hover:text-white'
+    )
+
+    let trackTitleClass = $derived(
+        appSettings.frameTheme === 'light'
+            ? 'text-sm font-semibold text-black overflow-hidden text-ellipsis whitespace-nowrap'
+            : 'text-sm font-semibold text-white overflow-hidden text-ellipsis whitespace-nowrap'
+    )
+
+    let resultTitleClass = $derived(
+        appSettings.frameTheme === 'light'
+            ? 'font-headline text-3xl font-extrabold tracking-tighter text-black leading-tight max-md:text-3xl'
+            : 'font-headline text-3xl font-extrabold tracking-tighter text-white leading-tight max-md:text-3xl'
+    )
+
+    // Handler functions
+    async function handleSubmit() {
+        await albumParser.handleSubmit(() => {
+            appSettings.customAccentColor = ''
+        })
     }
 
     function formatDuration(seconds: number): string {
-        const m = Math.floor(seconds / 60)
-        const s = Math.floor(seconds % 60)
-        return `${m}:${s.toString().padStart(2, '0')}`
+        const mins = Math.floor(seconds / 60)
+        const secs = seconds % 60
+        return `${mins}:${secs.toString().padStart(2, '0')}`
+    }
+
+    function formatYear(releaseDate: string): string {
+        const date = new Date(releaseDate)
+        if (Number.isNaN(date.getTime())) return releaseDate.slice(0, 4) || 'Unknown'
+        return String(date.getFullYear())
     }
 </script>
 
-<div class="relative h-screen w-screen overflow-hidden bg-black font-sans">
-    {#if albumParser.viewState === 'input'}
-        <PhoneInputScreen
-                locale={appSettings.locale}
-                inputUrl={albumParser.inputUrl}
-                loading={albumParser.loading}
-                errorMsg={albumParser.errorMsg}
-                changeLocale={appSettings.changeLocale}
-                openGithubRepo={appSettings.openGithubRepo}
-                handleSubmit={() => albumParser.handleSubmit()}
-                updateInputUrl={(v) => (albumParser.inputUrl = v)}
-        />
-    {:else}
-        <div class="relative mx-auto h-full max-w-[430px]">
-            <div
-                    bind:this={imageExport.phoneFrameRef}
-                    class="relative h-full w-full overflow-hidden rounded-[2.5rem] border-[3px] border-white/10 bg-black shadow-[0_0_60px_rgba(0,0,0,0.6)]"
-            >
-                <PhoneResultScreen
-                        bind:this={imageExport.resultScreenRef}
-                        albumData={albumParser.albumData}
-                        coverUrl={albumParser.albumData?.cover_url || ''}
-                        exportRenderMode={imageExport.exportRenderMode}
-                        resultScreenThemeClass={appSettings.frameTheme === 'dark' ? 'text-white' : 'text-black'}
-                        resultOverlayClass={appSettings.frameTheme === 'dark' ? 'bg-black/50' : 'bg-white/50'}
-                        titleAlignClass={appSettings.titleAlign === 'left' ? 'text-left' : appSettings.titleAlign === 'right' ? 'text-right' : 'text-center'}
-                        resultTitleClass="text-3xl font-extrabold"
-                        resolvedAccentColor={resolvedAccentColor}
-                        resultMetaClass="text-sm text-white/60"
-                        trackArtistClass="text-sm text-white/50"
-                        trackTitleClass="text-sm font-semibold"
-                        trackDurationMutedClass="text-sm text-white/40"
-                        formatYear={formatYear}
-                        formatDuration={formatDuration}
-                />
-            </div>
-        </div>
+<div
+        class="relative grid h-dvh w-full place-items-center overflow-hidden {albumParser.viewState === 'input'
+    ? 'bg-black'
+    : 'bg-[radial-gradient(circle_at_20%_20%,rgb(255_140_147_/_25%),transparent_40%),radial-gradient(circle_at_80%_80%,rgb(114_254_143_/_18%),transparent_35%),#080808]'}"
+>
+    {#if albumParser.viewState === 'result' && albumParser.albumData}
+        <div
+                class="absolute inset-0 z-0 bg-center bg-cover [transform:scale(1.12)]"
+                style="background-image: url({coverUrl}); filter: blur({appSettings.blurLevel}px)"
+        ></div>
+    {/if}
 
+    {#if albumParser.viewState === 'result' && albumParser.albumData}
         <DesktopControlPanel
                 locale={appSettings.locale}
                 blurLevel={appSettings.blurLevel}
                 exportRatio={appSettings.exportRatio}
                 frameTheme={appSettings.frameTheme}
-                resolvedAccentColor={resolvedAccentColor}
+                {resolvedAccentColor}
                 titleAlign={appSettings.titleAlign}
                 showCredit={appSettings.showCredit}
                 creditName={appSettings.creditName}
@@ -105,7 +141,7 @@
                 blurLevel={appSettings.blurLevel}
                 exportRatio={appSettings.exportRatio}
                 frameTheme={appSettings.frameTheme}
-                resolvedAccentColor={resolvedAccentColor}
+                {resolvedAccentColor}
                 titleAlign={appSettings.titleAlign}
                 showCredit={appSettings.showCredit}
                 creditName={appSettings.creditName}
@@ -130,4 +166,112 @@
                 setCreditName={(v) => (appSettings.creditName = v)}
         />
     {/if}
+
+    <div
+            bind:this={imageExport.phoneFrameRef}
+            class="relative z-[1] w-[min(430px,100%)] aspect-[9/19.5] overflow-hidden rounded-[36px] bg-transparent shadow-[0_30px_80px_rgb(0_0_0_/_70%)] max-md:w-[min(420px,100%-1rem)] max-md:rounded-[28px] select-none"
+    >
+        {#if albumParser.viewState === 'input'}
+            <PhoneInputScreen
+                    locale={appSettings.locale}
+                    inputUrl={albumParser.inputUrl}
+                    loading={albumParser.loading}
+                    errorMsg={albumParser.errorMsg}
+                    changeLocale={appSettings.changeLocale}
+                    openGithubRepo={appSettings.openGithubRepo}
+                    {handleSubmit}
+                    updateInputUrl={(v) => (albumParser.inputUrl = v)}
+            />
+        {:else if albumParser.albumData}
+            <PhoneResultScreen
+                    bind:this={imageExport.resultScreenRef}
+                    albumData={albumParser.albumData}
+                    {coverUrl}
+                    exportRenderMode={imageExport.exportRenderMode}
+                    {resultScreenThemeClass}
+                    {resultOverlayClass}
+                    {titleAlignClass}
+                    {resultTitleClass}
+                    {resolvedAccentColor}
+                    {resultMetaClass}
+                    {trackArtistClass}
+                    {trackTitleClass}
+                    {trackHeartMutedClass}
+                    {trackDurationMutedClass}
+                    {formatYear}
+                    {formatDuration}
+            />
+        {/if}
+    </div>
 </div>
+
+<style>
+    @font-face {
+        font-family: 'Inter';
+        font-style: normal;
+        font-weight: 400;
+        font-display: swap;
+        src: url('https://cdn.jsdelivr.net/fontsource/fonts/inter@latest/latin-400-normal.woff2')
+        format('woff2');
+    }
+
+    @font-face {
+        font-family: 'Inter';
+        font-style: normal;
+        font-weight: 500;
+        font-display: swap;
+        src: url('https://cdn.jsdelivr.net/fontsource/fonts/inter@latest/latin-500-normal.woff2')
+        format('woff2');
+    }
+
+    @font-face {
+        font-family: 'Inter';
+        font-style: normal;
+        font-weight: 600;
+        font-display: swap;
+        src: url('https://cdn.jsdelivr.net/fontsource/fonts/inter@latest/latin-600-normal.woff2')
+        format('woff2');
+    }
+
+    @font-face {
+        font-family: 'Manrope';
+        font-style: normal;
+        font-weight: 700;
+        font-display: swap;
+        src: url('https://cdn.jsdelivr.net/fontsource/fonts/manrope@latest/latin-700-normal.woff2')
+        format('woff2');
+    }
+
+    @font-face {
+        font-family: 'Manrope';
+        font-style: normal;
+        font-weight: 800;
+        font-display: swap;
+        src: url('https://cdn.jsdelivr.net/fontsource/fonts/manrope@latest/latin-800-normal.woff2')
+        format('woff2');
+    }
+
+    @font-face {
+        font-family: 'Material Symbols Outlined';
+        font-style: normal;
+        font-weight: 100 700;
+        font-display: block;
+        src: url('https://cdn.jsdelivr.net/fontsource/fonts/material-symbols-outlined:vf@latest/latin-wght-normal.woff2')
+        format('woff2-variations');
+    }
+
+    :global(.material-symbols-outlined) {
+        font-family: 'Material Symbols Outlined';
+        font-weight: normal;
+        font-style: normal;
+        line-height: 1;
+        letter-spacing: normal;
+        text-transform: none;
+        display: inline-block;
+        white-space: nowrap;
+        word-wrap: normal;
+        direction: ltr;
+        -webkit-font-feature-settings: 'liga';
+        -webkit-font-smoothing: antialiased;
+    }
+</style>

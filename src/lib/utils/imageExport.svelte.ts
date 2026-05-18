@@ -1,7 +1,7 @@
 import { tick } from 'svelte'
-import { albumParser } from './albumParser.svelte'
 import { appSettings } from '$lib/stores/appSettings.svelte'
 import type { ExportRatio } from '$lib/stores/appSettings.svelte'
+import { albumParser } from './albumParser.svelte'
 
 const EXPORT_FRAME_HEIGHT_RATIO = 0.9
 const EXPORT_SIZE: Record<ExportRatio, { width: number; height: number }> = {
@@ -272,4 +272,4 @@ function createImageExport(getCoverUrl: () => string) {
   }
 }
 
-export const imageExport = createImageExport(() => '')
+export const imageExport = createImageExport(() => albumParser.albumData?.cover_url ?? '')
