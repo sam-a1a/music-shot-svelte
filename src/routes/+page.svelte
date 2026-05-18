@@ -97,11 +97,11 @@
 <div
         class="relative grid h-dvh w-full place-items-center overflow-hidden {albumParser.viewState === 'input'
     ? 'bg-black'
-    : 'bg-[radial-gradient(circle_at_20%_20%,rgb(255_140_147_/_25%),transparent_40%),radial-gradient(circle_at_80%_80%,rgb(114_254_143_/_18%),transparent_35%),#080808]'}"
+    : 'bg-[radial-gradient(circle_at_20%_20%,rgb(255_140_147/25%),transparent_40%),radial-gradient(circle_at_80%_80%,rgb(114_254_143/18%),transparent_35%),#080808]'}"
 >
     {#if albumParser.viewState === 'result' && albumParser.albumData}
         <div
-                class="absolute inset-0 z-0 bg-center bg-cover [transform:scale(1.12)]"
+                class="absolute inset-0 z-0 bg-center bg-cover transform-[scale(1.12)]"
                 style="background-image: url({coverUrl}); filter: blur({appSettings.blurLevel}px)"
         ></div>
     {/if}
@@ -169,7 +169,7 @@
 
     <div
             bind:this={imageExport.phoneFrameRef}
-            class="relative z-[1] w-[min(430px,100%)] aspect-[9/19.5] overflow-hidden rounded-[36px] bg-transparent shadow-[0_30px_80px_rgb(0_0_0_/_70%)] max-md:w-[min(420px,100%-1rem)] max-md:rounded-[28px] select-none"
+            class="relative z-1 w-[min(430px,100%)] aspect-9/19.5 overflow-hidden rounded-[36px] bg-transparent shadow-[0_30px_80px_rgb(0_0_0/70%)] max-md:w-[min(420px,100%-1rem)] max-md:rounded-[28px] select-none"
     >
         {#if albumParser.viewState === 'input'}
             <PhoneInputScreen
@@ -184,7 +184,7 @@
             />
         {:else if albumParser.albumData}
             <PhoneResultScreen
-                    bind:this={imageExport.resultScreenRef}
+                    resultScreenRef={imageExport.resultScreenRef}
                     albumData={albumParser.albumData}
                     {coverUrl}
                     exportRenderMode={imageExport.exportRenderMode}
@@ -258,20 +258,5 @@
         font-display: block;
         src: url('https://cdn.jsdelivr.net/fontsource/fonts/material-symbols-outlined:vf@latest/latin-wght-normal.woff2')
         format('woff2-variations');
-    }
-
-    :global(.material-symbols-outlined) {
-        font-family: 'Material Symbols Outlined';
-        font-weight: normal;
-        font-style: normal;
-        line-height: 1;
-        letter-spacing: normal;
-        text-transform: none;
-        display: inline-block;
-        white-space: nowrap;
-        word-wrap: normal;
-        direction: ltr;
-        -webkit-font-feature-settings: 'liga';
-        -webkit-font-smoothing: antialiased;
     }
 </style>
