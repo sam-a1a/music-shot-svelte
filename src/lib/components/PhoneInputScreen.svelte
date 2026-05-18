@@ -48,6 +48,12 @@
                     className="h-6 inline-flex items-center gap-1.5 rounded-lg border border-white/20 bg-white/10 px-2 text-xs font-semibold text-white transition-colors hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 cursor-pointer"
                     iconClassName="h-3.5 w-3.5"
             />
+            <span class="inline-flex items-center rounded-lg border border-white/20 bg-white/10 px-2.5 py-1 text-xs font-semibold text-white/70">
+                SvelteKit
+            </span>
+        </div>
+
+        <div class="mb-2 mt-4">
             <div class="grid grid-cols-4 rounded-lg bg-white/10">
                 {#each (['en', 'zh', 'ar', 'ru'] as Locale[]) as loc (loc)}
                     <button
@@ -61,7 +67,7 @@
             </div>
         </div>
 
-        <div class="mb-6 pb-5 max-md:mb-5 max-md:pb-4">
+        <div class="mb-6 pb-5 max-md:mb-5 max-md:pb-4 pt-10">
             <h1
                     class="m-0 mt-2 font-headline text-[34px] leading-[1.02] font-extrabold text-white max-md:text-[28px]"
             >
