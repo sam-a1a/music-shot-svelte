@@ -1,4 +1,3 @@
-```markdown
 # Music Shot
 
 Generate shareable album images from Apple Music and Spotify links.
