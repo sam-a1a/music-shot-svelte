@@ -2,7 +2,7 @@
 
 Generate shareable album images from Apple Music and Spotify links.
 
-[Live Demo](https://sam-a1a.github.io/music-shot-svelte/)
+[Live Demo](https://sam-a1a.github.io/MusicArt/)
 
 > **Svelte Fork:** This is a SvelteKit port of the original Vue 3 project. You can find the original Vue version [here](https://github.com/ianho7/music-shot).
 

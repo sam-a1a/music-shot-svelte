@@ -1,5 +1,4 @@
 import { tick } from 'svelte'
-import { SvelteMap } from 'svelte/reactivity'
 import { appSettings } from '$lib/stores/appSettings.svelte'
 import type { ExportRatio } from '$lib/stores/appSettings.svelte'
 import { albumParser } from './albumParser.svelte'
@@ -12,7 +11,7 @@ const EXPORT_SIZE: Record<ExportRatio, { width: number; height: number }> = {
 
 let snapdomLib: typeof import('@zumer/snapdom') | null = null
 
-async function loadImage(src: string): Promise<HTMLImageElement> {
+function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const img = new Image()
     img.crossOrigin = 'anonymous'
@@ -23,9 +22,30 @@ async function loadImage(src: string): Promise<HTMLImageElement> {
 }
 
 function nextFrame(): Promise<void> {
-  return new Promise((resolve) => {
-    requestAnimationFrame(() => resolve())
-  })
+  return new Promise((resolve) => requestAnimationFrame(() => resolve()))
+}
+
+function releaseCanvas(canvas: HTMLCanvasElement) {
+  canvas.width = 0
+  canvas.height = 0
+}
+
+/** Cover-fits the artwork into the canvas, blurred, mirroring the on-screen backdrop. */
+function drawBlurredBackdrop(
+  ctx: CanvasRenderingContext2D,
+  cover: HTMLImageElement,
+  width: number,
+  height: number,
+  blurPx: number,
+) {
+  const scale = Math.max(width / cover.width, height / cover.height)
+  const drawW = cover.width * scale
+  const drawH = cover.height * scale
+
+  ctx.save()
+  ctx.filter = `blur(${blurPx}px)`
+  ctx.drawImage(cover, (width - drawW) / 2, (height - drawH) / 2, drawW, drawH)
+  ctx.restore()
 }
 
 async function drawExportCredit(
@@ -34,7 +54,7 @@ async function drawExportCredit(
   canvasHeight: number,
   name: string,
   avatarSrc: string,
-  imageCache?: Map<string, HTMLImageElement>,
+  imageCache: Map<string, HTMLImageElement>,
 ) {
   const text = name.trim()
   if (!text) return
@@ -72,10 +92,10 @@ async function drawExportCredit(
   const textBaselineY = y + Math.round((contentHeight - textInkHeight) / 2) + textAscent
 
   if (hasAvatar) {
-    let avatar = imageCache?.get(avatarSrc)
+    let avatar = imageCache.get(avatarSrc)
     if (!avatar) {
       avatar = await loadImage(avatarSrc)
-      imageCache?.set(avatarSrc, avatar)
+      imageCache.set(avatarSrc, avatar)
     }
     const avatarY = Math.round(y + (contentHeight - avatarSize) / 2)
     const sourceWidth = Math.max(1, avatar.naturalWidth || avatar.width)
@@ -109,176 +129,124 @@ async function drawExportCredit(
 }
 
 async function getSnapdom() {
-  if (!snapdomLib) {
-    snapdomLib = await import('@zumer/snapdom')
-  }
+  snapdomLib ??= await import('@zumer/snapdom')
   return snapdomLib.snapdom
 }
 
-function createImageExport(getCoverUrl: () => string) {
-  let phoneFrameRef = $state<HTMLElement | null>(null)
-  let resultScreenRef = $state<HTMLElement | null>(null)
-  let exporting = $state(false)
-  let exportError = $state('')
-  let exportRenderMode = $state(false)
+class ImageExport {
+  phoneFrameRef = $state<HTMLElement | null>(null)
+  resultScreenRef = $state<HTMLElement | null>(null)
+  exporting = $state(false)
+  exportError = $state('')
+  exportRenderMode = $state(false)
 
-  function getExportFileName(): string {
+  #fileName() {
     const safeTitle =
       (albumParser.albumData?.title || 'album').replace(/[\\/:*?"<>|]+/g, '_').trim() || 'album'
     return `${safeTitle}_${appSettings.exportRatio.replace(':', 'x')}.png`
   }
 
-  async function generateAndDownloadImage() {
-    if (!albumParser.albumData || !phoneFrameRef || !resultScreenRef || exporting) return
-    exporting = true
-    exportError = ''
-    exportRenderMode = true
-    const perfStart = performance.now()
-    const stepDurations: Record<string, number> = {}
-    const markStep = (name: string, start: number) => {
-      stepDurations[name] = Number((performance.now() - start).toFixed(1))
-    }
-    const imageCache = new SvelteMap<string, HTMLImageElement>()
-    const coverUrl = getCoverUrl()
+  generateAndDownloadImage = async () => {
+    const coverUrl = albumParser.albumData?.cover_url ?? ''
+    if (!coverUrl || !this.phoneFrameRef || !this.resultScreenRef || this.exporting) return
+
+    this.exporting = true
+    this.exportError = ''
+    this.exportRenderMode = true
+    const startedAt = performance.now()
+    // eslint-disable-next-line svelte/prefer-svelte-reactivity -- export-local cache; reactivity would only add overhead
+    const imageCache = new Map<string, HTMLImageElement>()
 
     try {
       await tick()
-      if (document.fonts?.ready) {
-        await document.fonts.ready
-      }
+      await document.fonts?.ready
+
       const { width, height } = EXPORT_SIZE[appSettings.exportRatio]
-      const frameRect = phoneFrameRef.getBoundingClientRect()
-      const resultRect = resultScreenRef.getBoundingClientRect()
+      const frameRect = this.phoneFrameRef.getBoundingClientRect()
       const canvas = document.createElement('canvas')
       canvas.width = width
       canvas.height = height
       const ctx = canvas.getContext('2d')
-
       if (!ctx) {
-        exportError = 'Failed to get canvas context'
+        this.exportError = 'Failed to get canvas context'
         return
       }
 
-      const loadCoverStart = performance.now()
-      let cover = imageCache.get(coverUrl)
-      if (!cover) {
-        cover = await loadImage(coverUrl)
-        imageCache.set(coverUrl, cover)
-      }
-      markStep('loadCover', loadCoverStart)
+      const cover = await loadImage(coverUrl)
+      imageCache.set(coverUrl, cover)
 
-      const drawBgStart = performance.now()
-      const scale = Math.max(width / cover.width, height / cover.height)
-      const drawW = cover.width * scale
-      const drawH = cover.height * scale
-      const dx = (width - drawW) / 2
-      const dy = (height - drawH) / 2
-
-      ctx.save()
-      ctx.filter = `blur(${appSettings.blurLevel}px)`
-      ctx.drawImage(cover, dx, dy, drawW, drawH)
-      ctx.restore()
-
+      drawBlurredBackdrop(ctx, cover, width, height, appSettings.blurLevel)
       ctx.fillStyle = 'rgba(14, 14, 14, 0.35)'
       ctx.fillRect(0, 0, width, height)
-      markStep('drawBg', drawBgStart)
 
-      const desiredInnerHeight = Math.round(height * EXPORT_FRAME_HEIGHT_RATIO)
-      const captureScale = desiredInnerHeight / frameRect.height
-
-      const previousScrollTop = resultScreenRef.scrollTop
-      resultScreenRef.scrollTop = 0
+      const captureScale = Math.round(height * EXPORT_FRAME_HEIGHT_RATIO) / frameRect.height
+      const previousScrollTop = this.resultScreenRef.scrollTop
+      this.resultScreenRef.scrollTop = 0
       await tick()
 
       const snapdom = await getSnapdom()
-      const snapdomStart = performance.now()
       let frameShot: HTMLCanvasElement
       try {
-        frameShot = await snapdom.toCanvas(phoneFrameRef, {
+        frameShot = await snapdom.toCanvas(this.phoneFrameRef, {
           backgroundColor: 'transparent',
           scale: captureScale,
           dpr: 1,
           width: Math.round(frameRect.width),
           height: Math.round(frameRect.height),
           embedFonts: true,
-          iconFonts: [/Material Symbols/i],
         })
       } finally {
-        resultScreenRef.scrollTop = previousScrollTop
+        this.resultScreenRef.scrollTop = previousScrollTop
       }
-      markStep('snapdomCapture', snapdomStart)
 
-      const drawFrameStart = performance.now()
-      const frameWidth = frameShot.width
-      const frameHeight = frameShot.height
-      const frameX = Math.round((width - frameWidth) / 2)
-      const frameY = Math.round((height - frameHeight) / 2)
-      ctx.drawImage(frameShot, frameX, frameY, frameWidth, frameHeight)
-      markStep('drawFrame', drawFrameStart)
+      ctx.drawImage(
+        frameShot,
+        Math.round((width - frameShot.width) / 2),
+        Math.round((height - frameShot.height) / 2),
+        frameShot.width,
+        frameShot.height,
+      )
+      releaseCanvas(frameShot)
 
-      const drawCreditStart = performance.now()
       if (appSettings.showCredit) {
-        await drawExportCredit(ctx, width, height, appSettings.creditName, appSettings.avatarUrl, imageCache)
+        await drawExportCredit(
+          ctx,
+          width,
+          height,
+          appSettings.creditName,
+          appSettings.avatarUrl,
+          imageCache,
+        )
       }
-      markStep('drawCredit', drawCreditStart)
-      frameShot.width = 0
-      frameShot.height = 0
       imageCache.clear()
 
-      const encodeStart = performance.now()
-      const blob: Blob | null = await new Promise((resolve) =>
-        canvas.toBlob(resolve, 'image/png', 1),
-      )
-
+      const blob: Blob | null = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'))
+      releaseCanvas(canvas)
       if (!blob) {
-        exportError = 'Failed to generate image'
+        this.exportError = 'Failed to generate image'
         return
       }
-      markStep('encodePng', encodeStart)
 
       await nextFrame()
 
       const url = URL.createObjectURL(blob)
       const link = document.createElement('a')
       link.href = url
-      link.download = getExportFileName()
+      link.download = this.#fileName()
       link.click()
       URL.revokeObjectURL(url)
 
       if (import.meta.env.DEV) {
-        const total = Number((performance.now() - perfStart).toFixed(1))
-        console.groupCollapsed('[export-image] perf')
-        console.log('params:', {
-          ratio: appSettings.exportRatio,
-          width,
-          height,
-          frameRect: { width: frameRect.width, height: frameRect.height },
-          resultRect: { width: resultRect.width, height: resultRect.height },
-          captureScale: Number(captureScale.toFixed(3)),
-          blurLevel: appSettings.blurLevel,
-        })
-        console.table({ ...stepDurations, total })
-        console.groupEnd()
+        console.log(`[export-image] ${Math.round(performance.now() - startedAt)}ms`)
       }
     } catch (err) {
-      exportError = (err as Error).message || 'Export failed'
+      this.exportError = (err as Error).message || 'Export failed'
       console.error('[export-image] failed:', err)
     } finally {
-      exportRenderMode = false
-      exporting = false
+      this.exportRenderMode = false
+      this.exporting = false
     }
-  }
-
-  return {
-    get phoneFrameRef() { return phoneFrameRef },
-    set phoneFrameRef(v) { phoneFrameRef = v },
-    get resultScreenRef() { return resultScreenRef },
-    set resultScreenRef(v) { resultScreenRef = v },
-    get exporting() { return exporting },
-    get exportError() { return exportError },
-    get exportRenderMode() { return exportRenderMode },
-    generateAndDownloadImage,
   }
 }
 
-export const imageExport = createImageExport(() => albumParser.albumData?.cover_url ?? '')
+export const imageExport = new ImageExport()

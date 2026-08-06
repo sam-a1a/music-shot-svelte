@@ -16,7 +16,3 @@ export function isRTL(locale: Locale): boolean {
 export function t(key: string, locale: Locale): string {
     return messages[locale]?.[key] || messages['en']?.[key] || key
 }
-
-export function getMessages(locale: Locale): Record<string, string> {
-    return messages[locale] || messages['en']
-}

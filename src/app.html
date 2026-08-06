@@ -4,6 +4,62 @@
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<meta name="text-scale" content="scale" />
+
+		<!-- Self-hosted fonts, declared in the head so they start downloading during HTML
+		     parse rather than after the CSS bundle arrives. The two faces the first screen
+		     paints with are preloaded; the rest are fetched on demand. -->
+		<link
+			rel="preload"
+			as="font"
+			type="font/woff2"
+			crossorigin
+			href="%sveltekit.assets%/fonts/inter-latin-400.woff2"
+		/>
+		<link
+			rel="preload"
+			as="font"
+			type="font/woff2"
+			crossorigin
+			href="%sveltekit.assets%/fonts/manrope-latin-800.woff2"
+		/>
+		<style>
+			@font-face {
+				font-family: 'Inter';
+				font-style: normal;
+				font-weight: 400;
+				font-display: swap;
+				src: url('%sveltekit.assets%/fonts/inter-latin-400.woff2') format('woff2');
+			}
+			@font-face {
+				font-family: 'Inter';
+				font-style: normal;
+				font-weight: 500;
+				font-display: swap;
+				src: url('%sveltekit.assets%/fonts/inter-latin-500.woff2') format('woff2');
+			}
+			@font-face {
+				font-family: 'Inter';
+				font-style: normal;
+				font-weight: 600;
+				font-display: swap;
+				src: url('%sveltekit.assets%/fonts/inter-latin-600.woff2') format('woff2');
+			}
+			@font-face {
+				font-family: 'Manrope';
+				font-style: normal;
+				font-weight: 700;
+				font-display: swap;
+				src: url('%sveltekit.assets%/fonts/manrope-latin-700.woff2') format('woff2');
+			}
+			@font-face {
+				font-family: 'Manrope';
+				font-style: normal;
+				font-weight: 800;
+				font-display: swap;
+				src: url('%sveltekit.assets%/fonts/manrope-latin-800.woff2') format('woff2');
+			}
+		</style>
+
 		%sveltekit.head%
 	</head>
 	<body data-sveltekit-preload-data="hover">
