@@ -15,7 +15,7 @@ const STORAGE_FRAME_THEME_KEY = 'music-shot:frame-theme'
 const STORAGE_TITLE_ALIGN_KEY = 'music-shot:title-align'
 const STORAGE_DEBUG_PREFIX = '[credit-storage]'
 
-export const GITHUB_REPO_URL = 'https://github.com/sam-a1a/music-shot-svelte'
+export const GITHUB_REPO_URL = 'https://github.com/sam-a1a/MusicArt'
 
 function detectBrowserLocale(): Locale {
   if (typeof window === 'undefined') return 'en'

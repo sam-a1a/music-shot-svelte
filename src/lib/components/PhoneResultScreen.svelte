@@ -1,5 +1,6 @@
 <script lang="ts">
     import { onMount, onDestroy } from 'svelte'
+    import losslessLogo from '$lib/assets/Apple_Lossless_logo.png'
 
     interface Track {
         track_number: number
@@ -136,7 +137,7 @@
                         <span class="mx-1">·</span>
                         <img
                                 class="h-3 mx-1 inline"
-                                src="$lib/assets/Apple_Lossless_logo.png"
+                                src={losslessLogo}
                                 alt=""
                                 aria-hidden="true"
                                 data-ai-hidden="true"
