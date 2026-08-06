@@ -72,8 +72,11 @@
     }
 </script>
 
+<!-- Held at LTR on purpose: the frame is artwork, and its only text comes from the
+     music service, so the exported image must not change with the UI locale. -->
 <div
         bind:this={rootRef}
+        dir="ltr"
         class="relative h-full w-full overflow-x-hidden overflow-y-auto font-body scrollbar-none [&::-webkit-scrollbar]:hidden {theme.screen} {imageExport.exportRenderMode ? '**:transition-none' : ''}"
 >
     <div class="absolute inset-0 z-0 pointer-events-none">

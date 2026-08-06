@@ -18,7 +18,7 @@
             fileInput:
                 'block w-[70%] h-8 text-xs text-white cursor-pointer file:cursor-pointer file:h-8 file:mr-2 file:rounded-lg file:border file:border-white/20 file:bg-white/15 file:px-2 file:py-1 file:text-xs file:font-semibold file:text-white hover:file:bg-white/20',
             avatar: 'w-8 h-8 rounded-lg object-cover',
-            clear: 'w-[30%] h-8 ml-auto rounded-lg border border-white/20 bg-white/10 px-2 py-1 text-xs font-semibold text-white transition-colors hover:bg-white/20 disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed',
+            clear: 'w-[30%] h-8 ms-auto rounded-lg border border-white/20 bg-white/10 px-2 py-1 text-xs font-semibold text-white transition-colors hover:bg-white/20 disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed',
             showAvatarNote: true
         },
         mobile: {

@@ -18,8 +18,8 @@ function validateAlbumUrl(rawUrl: string): string {
   const pathname = decodeURIComponent(url.pathname)
 
   if (hostname.includes('spotify.com')) {
-    if (!/\/album\/[a-zA-Z0-9]+(?:\/|$)/.test(pathname)) {
-      throw new Error('Invalid Spotify album URL')
+    if (!/\/(album|track)\/[a-zA-Z0-9]+(?:\/|$)/.test(pathname)) {
+      throw new Error('Invalid Spotify album or track URL')
     }
     return url.toString()
   }

@@ -127,14 +127,16 @@ interface SpotifyAlbumEntity {
   id: string
   name: string
   title: string
-  subtitle: string // 通常是艺人名称
+  subtitle?: string // 通常是艺人名称（专辑嵌入）
   uri: string
   releaseDate: {
     isoString: string // ISO 8601 格式
   }
   isPlayable: boolean
   isExplicit: boolean
-  trackList: SpotifyTrack[]
+  trackList?: SpotifyTrack[] // 仅专辑嵌入
+  artists?: { name: string; uri: string }[] // 仅单曲嵌入
+  duration?: number // 单曲时长，毫秒单位
   visualIdentity: VisualIdentity
 }
 

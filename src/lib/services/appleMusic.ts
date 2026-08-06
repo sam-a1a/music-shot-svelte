@@ -31,57 +31,73 @@ export class MusicLinkParser {
     }
   }
 
+  /** Handles both /album/<id> and /track/<id> links; the embed payload differs per kind. */
   private async parseSpotify(url: string): Promise<AlbumData> {
-    const match = url.match(/album\/([a-zA-Z0-9]+)/)
-    if (!match) throw new Error('Invalid Spotify album URL')
+    const match = url.match(/\/(album|track)\/([a-zA-Z0-9]+)/)
+    const kind = match?.[1]
+    const id = match?.[2]
+    if (!kind || !id) throw new Error('Invalid Spotify album or track URL')
 
-    const albumId = match[1]
-    if (!albumId) throw new Error('Invalid Spotify album URL')
-    const embedUrl = `https://open.spotify.com/embed/album/${albumId}`
+    const entity = await this.fetchSpotifyEntity(`https://open.spotify.com/embed/${kind}/${id}`)
 
-    const response = await fetch(`${this.PROXY}${encodeURIComponent(embedUrl)}`)
-    if (!response.ok) throw new Error('Failed to parse album')
-
-    const rawResponse = await response.text()
-    const html = this.extractHtmlFromProxyResponse(rawResponse)
-
-    const nextDataMatch = html.match(
-      /<script id="__NEXT_DATA__" type="application\/json">([\s\S]*?)<\/script>/,
+    const images = Array.isArray(entity.visualIdentity?.image) ? entity.visualIdentity.image : []
+    const bestImage = images.reduce(
+      (best, current) => ((current?.maxWidth ?? 0) > (best?.maxWidth ?? 0) ? current : best),
+      images[0],
     )
-    if (nextDataMatch) {
-      const nextDataRaw = nextDataMatch[1]
-      if (!nextDataRaw) {
-        throw new Error('Failed to parse album')
-      }
-      const nextData: SpotifyEmbedResponse = JSON.parse(nextDataRaw)
-      const entity = nextData?.props?.pageProps?.state?.data?.entity
-      if (!entity) {
-        throw new Error('Failed to parse album')
-      }
+    const title = entity.title || entity.name || ''
+    // Album embeds carry the artist in `subtitle`; track embeds use an `artists` array.
+    const artist =
+      entity.subtitle || (entity.artists ?? []).map((a) => a.name).filter(Boolean).join(', ')
 
-      const images = Array.isArray(entity.visualIdentity?.image) ? entity.visualIdentity.image : []
-      const bestImage = images.reduce(
-        (best, current) => ((current?.maxWidth ?? 0) > (best?.maxWidth ?? 0) ? current : best),
-        images[0],
-      )
-      const tracks = Array.isArray(entity.trackList) ? entity.trackList : []
+    const shared = {
+      title,
+      artist,
+      cover_url: bestImage?.url || '',
+      release_date: entity.releaseDate?.isoString || '',
+      platform: 'Spotify' as const,
+    }
 
+    if (kind === 'track') {
       return {
-        title: entity.title || entity.name || '',
-        artist: entity.subtitle || '',
-        cover_url: bestImage?.url || '',
-        release_date: entity.releaseDate?.isoString || '',
-        platform: 'Spotify',
-        tracks: tracks.map((t, i) => ({
-          name: t.title || '',
-          artist: t.subtitle || entity.subtitle || '',
-          duration_s: Math.floor((t.duration ?? 0) / 1000),
-          track_number: i + 1,
-        })),
+        ...shared,
+        tracks: [
+          {
+            name: title,
+            artist,
+            duration_s: Math.floor((entity.duration ?? 0) / 1000),
+            track_number: 1,
+          },
+        ],
       }
     }
 
-    throw new Error('Failed to parse album')
+    const tracks = Array.isArray(entity.trackList) ? entity.trackList : []
+    return {
+      ...shared,
+      tracks: tracks.map((t, i) => ({
+        name: t.title || '',
+        artist: t.subtitle || artist,
+        duration_s: Math.floor((t.duration ?? 0) / 1000),
+        track_number: i + 1,
+      })),
+    }
+  }
+
+  private async fetchSpotifyEntity(embedUrl: string) {
+    const response = await fetch(`${this.PROXY}${encodeURIComponent(embedUrl)}`)
+    if (!response.ok) throw new Error('Failed to parse album')
+
+    const html = this.extractHtmlFromProxyResponse(await response.text())
+    const nextDataRaw = html.match(
+      /<script id="__NEXT_DATA__" type="application\/json">([\s\S]*?)<\/script>/,
+    )?.[1]
+    if (!nextDataRaw) throw new Error('Failed to parse album')
+
+    const nextData: SpotifyEmbedResponse = JSON.parse(nextDataRaw)
+    const entity = nextData?.props?.pageProps?.state?.data?.entity
+    if (!entity) throw new Error('Failed to parse album')
+    return entity
   }
 
   private extractHtmlFromProxyResponse(raw: string): string {
