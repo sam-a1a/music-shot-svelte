@@ -71,3 +71,31 @@ body {
   height: 100%;
   overflow: hidden;
 }
+
+/* The side panel needs both width and height. A phone in landscape has the
+   width but not the height, so it falls back to the bottom sheet. */
+@custom-variant roomy (@media (min-width: 768px) and (min-height: 640px));
+
+/* Touch devices get the whole frame on screen. On a desktop the frame is meant
+   to bleed past the viewport, so these rules are scoped to coarse pointers. */
+@media (pointer: coarse) {
+  .phone-stage {
+    max-height: 100dvh;
+    overflow-y: auto;
+    /* Falls back to plain centring where `safe` is unsupported. */
+    align-items: safe center;
+  }
+
+  /* Height-derived width keeps the 9/19.5 frame fully visible; the 280px floor
+     stops it collapsing to a thumbnail in landscape, where the stage scrolls. */
+  .phone-frame {
+    width: min(420px, 100% - 1rem, max(280px, calc((100dvh - 1.5rem) * 9 / 19.5)));
+  }
+
+  /* iOS Safari zooms the page when a focused control is under 16px. */
+  input,
+  select,
+  textarea {
+    font-size: max(16px, 1em);
+  }
+}

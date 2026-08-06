@@ -10,7 +10,7 @@
 </script>
 
 <div
-        class="absolute top-6 end-6 z-60 hidden w-70 max-w-[calc(100vw-1rem)] flex-col gap-4 rounded-2xl border border-white/15 bg-black/45 p-4 backdrop-blur-xl md:flex select-none"
+        class="absolute top-6 end-6 z-60 hidden w-70 max-w-[calc(100vw-1rem)] flex-col gap-4 rounded-2xl border border-white/15 bg-black/45 p-4 backdrop-blur-xl roomy:flex select-none"
 >
     <div class="h-8 grid grid-cols-4 gap-0 rounded-lg bg-white/10">
         {#each LOCALES as loc (loc)}

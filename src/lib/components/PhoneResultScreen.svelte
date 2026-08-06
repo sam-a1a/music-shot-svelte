@@ -77,7 +77,7 @@
 <div
         bind:this={rootRef}
         dir="ltr"
-        class="relative h-full w-full overflow-x-hidden overflow-y-auto font-body scrollbar-none [&::-webkit-scrollbar]:hidden {theme.screen} {imageExport.exportRenderMode ? '**:transition-none' : ''}"
+        class="relative h-full w-full overflow-x-hidden overflow-y-auto overscroll-contain font-body scrollbar-none [&::-webkit-scrollbar]:hidden {theme.screen} {imageExport.exportRenderMode ? '**:transition-none' : ''}"
 >
     <div class="absolute inset-0 z-0 pointer-events-none">
         <img
@@ -93,7 +93,7 @@
 
     <main
             bind:this={contentRef}
-            class="relative z-10 mx-auto max-w-lg px-5 py-10 max-md:px-4 max-md:pb-24 max-md:pt-8"
+            class="relative z-10 mx-auto max-w-lg px-5 py-10 max-md:px-4 max-md:pb-[calc(env(safe-area-inset-bottom)+6rem)] max-md:pt-8"
     >
         <section class="flex flex-col items-center mb-6">
             <div class="relative group mb-5 w-full px-5 max-md:mb-4 max-md:px-3">

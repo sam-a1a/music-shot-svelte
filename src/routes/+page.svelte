@@ -15,7 +15,7 @@
 </script>
 
 <div
-        class="relative grid h-dvh w-full place-items-center overflow-hidden {albumParser.viewState === 'input'
+        class="phone-stage relative grid h-dvh w-full place-items-center overflow-hidden {albumParser.viewState === 'input'
     ? 'bg-black'
     : 'bg-[radial-gradient(circle_at_20%_20%,rgb(255_140_147/25%),transparent_40%),radial-gradient(circle_at_80%_80%,rgb(114_254_143/18%),transparent_35%),#080808]'}"
 >
@@ -31,7 +31,7 @@
 
     <div
             bind:this={imageExport.phoneFrameRef}
-            class="relative z-1 w-[min(430px,100%)] aspect-9/19.5 overflow-hidden rounded-[36px] bg-transparent shadow-[0_30px_80px_rgb(0_0_0/70%)] max-md:w-[min(420px,100%-1rem)] max-md:rounded-[28px] select-none"
+            class="phone-frame relative z-1 w-[min(430px,100%)] aspect-9/19.5 overflow-hidden rounded-[36px] bg-transparent shadow-[0_30px_80px_rgb(0_0_0/70%)] max-md:w-[min(420px,100%-1rem)] max-md:rounded-[28px] select-none"
     >
         {#if album}
             <PhoneResultScreen albumData={album} />
